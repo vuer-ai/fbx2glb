@@ -4,9 +4,9 @@ This directory contains an example XBot model from Mixamo for testing the fbx2gl
 
 ## Contents
 
-- `XBot.fbx` - The original FBX model from Mixamo
-- `XBot.glb` - The converted GLB model (created by running the conversion tools)
-- `XBotModel.tsx` - A React/Three.js component generated from the model
+- `XBot.fbx` - The original FBX model from Mixamo (source file)
+- `XBot.glb` - The converted GLB model (example output)
+- `README.md` - This documentation file
 
 ## Usage
 
@@ -16,13 +16,16 @@ From the project root, run:
 
 ```bash
 # Using the Python module
-fbx2glb examples/XBot/XBot.fbx
+fbx2glb examples/XBot.fbx
 
 # Using the CLI in development
-python -m fbx2glb.cli examples/XBot/XBot.fbx
+python -m fbx2glb.cli examples/XBot.fbx
 
 # Generating a React component
-fbx2glb-component examples/XBot/XBot.fbx
+fbx2glb-component examples/XBot.fbx
+
+# Using the Makefile
+make convert-xbot
 ```
 
 ### Using the model in a React/Three.js application
@@ -43,6 +46,8 @@ function Scene() {
   );
 }
 ```
+
+**Note:** The `XBotModel.tsx` component would be generated using the `fbx2glb-component` command.
 
 ## Model Information
 
