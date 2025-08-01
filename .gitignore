@@ -79,3 +79,19 @@ test_import.py
 # Temporary files
 *.tmp
 *.temp
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
