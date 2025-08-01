@@ -4,49 +4,31 @@ Command-line interface for fbx2glb.
 
 import os
 import sys
-import argparse
 import logging
 from pathlib import Path
 
-from .converter import convert_file
+from .converter import convert_file, convert_file_with_params
 from .utils import setup_logging, check_dependencies
+from .params import ConversionParams
 
 logger = logging.getLogger(__name__)
 
 
-def parse_args() -> argparse.Namespace:
-    """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description='Convert FBX files to GLB format')
-    parser.add_argument('input_file', help='Path to input FBX file')
-    parser.add_argument('output_file', nargs='?', help='Path to output GLB file (optional)')
-    parser.add_argument('--method', choices=['fbx-sdk', 'fbx2gltf', 'blender'], 
-                       help='Conversion method to use')
-    parser.add_argument('--force', '-f', action='store_true', help='Force overwrite if output file exists')
-    parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose output')
-
-    # Advanced options
-    parser.add_argument('--draco', action='store_true', help='Use Draco compression (fbx2gltf only)')
-    parser.add_argument('--no-texture-optimization', action='store_true', help='Disable texture optimization (fbx2gltf only)')
-    parser.add_argument('--keep-attribute-info', action='store_true', help='Keep attribute info (fbx2gltf only)')
-    parser.add_argument('--blender-path', help='Path to Blender executable')
-
-    # Utility commands
-    parser.add_argument('--check-dependencies', action='store_true', help='Check for required dependencies and exit')
-    parser.add_argument('--version', action='store_true', help='Show version information and exit')
-
-    return parser.parse_args()
+def parse_args() -> ConversionParams:
+    """Parse command line arguments using params-proto."""
+    return ConversionParams.from_args()
 
 
 def main() -> int:
     """Main entry point for single file conversion."""
-    args = parse_args()
+    params = parse_args()
 
     # Setup logging
-    log_level = logging.DEBUG if args.verbose else logging.INFO
+    log_level = logging.DEBUG if params.verbose else logging.INFO
     setup_logging(log_level)
 
     # Handle utility commands
-    if args.check_dependencies:
+    if hasattr(params, 'check_dependencies') and params.check_dependencies:
         deps = check_dependencies()
         print("FBX2GLB Dependencies:")
         print(f"  FBX SDK: {'✅' if deps['fbx_sdk'] else '❌'}")
@@ -65,33 +47,48 @@ def main() -> int:
             print("\n✅ At least one conversion method is available.")
             return 0
 
-    if args.version:
+    if hasattr(params, 'version') and params.version:
         from . import __version__
         print(f"fbx2glb version {__version__}")
         return 0
 
+    # For utility commands, we don't need input_file
+    if (hasattr(params, 'check_dependencies') and params.check_dependencies) or (hasattr(params, 'version') and params.version):
+        return 0
+
     # Validate input file
-    if not os.path.exists(args.input_file):
-        logger.error(f"Input file '{args.input_file}' does not exist")
+    if not params.input_file:
+        logger.error("Input file is required")
+        return 1
+        
+    if not os.path.exists(params.input_file):
+        logger.error(f"Input file '{params.input_file}' does not exist")
         return 1
 
-    # Extract kwargs for additional parameters
-    kwargs = {
-        'draco': args.draco,
-        'no_texture_optimization': args.no_texture_optimization,
-        'keep_attribute_info': args.keep_attribute_info,
-        'blender_path': args.blender_path
-    }
+    # Check if FBX upgrade is needed
+    if params.upgrade_fbx:
+        from .fbx_upgrader import check_fbx_upgrade_needed, upgrade_fbx_file
+        
+        needs_upgrade, version_info = check_fbx_upgrade_needed(params.input_file)
+        if needs_upgrade:
+            logger.info(f"FBX file needs upgrade: {version_info}")
+            logger.info("Attempting to upgrade FBX file...")
+            
+            # Create upgraded file path
+            input_base = os.path.splitext(params.input_file)[0]
+            upgraded_file = f"{input_base}_upgraded.fbx"
+            
+            if upgrade_fbx_file(params.input_file, upgraded_file, verbose=params.verbose):
+                logger.info(f"FBX upgrade successful: {upgraded_file}")
+                params.input_file = upgraded_file
+            else:
+                logger.error("FBX upgrade failed")
+                return 1
+        else:
+            logger.info(f"FBX file is already compatible: {version_info}")
 
-    # Perform conversion
-    success = convert_file(
-        args.input_file,
-        args.output_file,
-        method=args.method,
-        force=args.force,
-        verbose=args.verbose,
-        **kwargs
-    )
+    # Perform conversion using the parameter structure
+    success = convert_file_with_params(params)
 
     return 0 if success else 1
 

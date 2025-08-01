@@ -1,27 +1,26 @@
 import unittest
 import sys
-import os
-
-# Add the parent directory to the path so we can import the package
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 class TestPackageImport(unittest.TestCase):
     """Test that the package can be imported correctly."""
-    
+
     def test_import_package(self):
         """Test that the package can be imported."""
         try:
             import fbx2glb
+            print("Python path:", sys.path)
+            print("fbx2glb.__file__:", fbx2glb.__file__)
+            print("fbx2glb dir:", dir(fbx2glb))
             self.assertTrue(True)
         except ImportError:
             self.fail("Failed to import fbx2glb package")
-    
+
     def test_version(self):
         """Test that the package has a version."""
         import fbx2glb
         self.assertIsNotNone(fbx2glb.__version__)
         self.assertIsInstance(fbx2glb.__version__, str)
-    
+
     def test_imports(self):
         """Test that the package exports the expected functions."""
         import fbx2glb

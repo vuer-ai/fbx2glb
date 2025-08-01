@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any, Tuple, List, Callable
 
 from .utils import find_conversion_tool, setup_logging
+from .params import ConversionParams, BlenderParams, Fbx2gltfParams
 
 # Check for FBX SDK availability
 try:
@@ -77,7 +78,7 @@ def convert_file(
 ) -> bool:
     """
     Convert an FBX file to GLB format.
-
+    
     Args:
         input_file: Path to the input FBX file
         output_file: Path to the output GLB file (optional)
@@ -85,64 +86,88 @@ def convert_file(
         force: Force overwrite if output file exists
         verbose: Enable verbose output
         **kwargs: Additional method-specific parameters
-
+        
     Returns:
         True if conversion was successful, False otherwise
     """
+    # Create parameter structure
+    params = ConversionParams(
+        input_file=input_file,
+        output_file=output_file,
+        method=method,
+        force=force,
+        verbose=verbose,
+        **kwargs
+    )
+    
+    return convert_file_with_params(params)
+
+
+def convert_file_with_params(params: ConversionParams) -> bool:
     # Setup logging
-    log_level = logging.DEBUG if verbose else logging.INFO
+    log_level = logging.DEBUG if params.verbose else logging.INFO
     setup_logging(log_level)
 
     # Validate input file
-    if not os.path.exists(input_file):
-        logger.error(f"Input file '{input_file}' does not exist")
+    if not os.path.exists(params.input_file):
+        logger.error(f"Input file '{params.input_file}' does not exist")
         return False
 
     # Determine output file if not specified
-    if not output_file:
-        input_base = os.path.splitext(input_file)[0]
-        output_file = f"{input_base}.glb"
+    if not params.output_file:
+        input_base = os.path.splitext(params.input_file)[0]
+        params.output_file = f"{input_base}.glb"
 
     # Check if output file exists
-    if os.path.exists(output_file) and not force:
-        logger.error(f"Output file '{output_file}' already exists. Use force=True to overwrite.")
+    if os.path.exists(params.output_file) and not params.force:
+        logger.error(f"Output file '{params.output_file}' already exists. Use force=True to overwrite.")
         return False
 
     # Create output directory if it doesn't exist
-    output_dir = os.path.dirname(output_file)
+    output_dir = os.path.dirname(params.output_file)
     if output_dir and not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
     # Determine conversion method
-    if not method:
+    if not params.method:
         if FBX_SDK_AVAILABLE:
-            method = 'fbx-sdk'
+            params.method = 'fbx-sdk'
         else:
-            method = find_conversion_tool()
+            params.method = find_conversion_tool()
 
-    logger.info(f"Converting '{input_file}' to '{output_file}' using {method}")
+    logger.info(f"Converting '{params.input_file}' to '{params.output_file}' using {params.method}")
 
     # Perform conversion
-    if method == 'fbx-sdk':
-        success = convert_with_fbx_sdk(input_file, output_file, verbose, **kwargs)
-    elif method == 'fbx2gltf':
-        success = convert_with_fbx2gltf(input_file, output_file, verbose, **kwargs)
-    elif method == 'blender':
-        success = convert_with_blender(input_file, output_file, verbose, **kwargs)
+    if params.method == 'fbx-sdk':
+        success = convert_with_fbx_sdk(params.input_file, params.output_file, params.verbose)
+    elif params.method == 'fbx2gltf':
+        fbx2gltf_params = Fbx2gltfParams(
+            draco=params.draco,
+            no_texture_optimization=params.no_texture_optimization,
+            keep_attribute_info=params.keep_attribute_info
+        )
+        success = convert_with_fbx2gltf(params.input_file, params.output_file, params.verbose, fbx2gltf_params)
+    elif params.method == 'blender':
+        blender_params = BlenderParams(
+            fix_axis=params.fix_axis,
+            export_yup=params.export_yup,
+            blender_path=params.blender_path
+        )
+        success = convert_with_blender(params.input_file, params.output_file, params.verbose, blender_params)
     else:
-        logger.error(f"Unsupported conversion method: {method}")
+        logger.error(f"Unsupported conversion method: {params.method}")
         return False
 
     if success:
-        input_size = os.path.getsize(input_file) / (1024 * 1024)  # MB
-        output_size = os.path.getsize(output_file) / (1024 * 1024)  # MB
+        input_size = os.path.getsize(params.input_file) / (1024 * 1024)  # MB
+        output_size = os.path.getsize(params.output_file) / (1024 * 1024)  # MB
         compression_ratio = (1 - (output_size / input_size)) * 100 if input_size > 0 else 0
 
-        logger.info(f"Conversion successful: {input_file} → {output_file}")
+        logger.info(f"Conversion successful: {params.input_file} → {params.output_file}")
         logger.info(f"File size: {input_size:.2f} MB → {output_size:.2f} MB ({compression_ratio:.1f}% reduction)")
         return True
     else:
-        logger.error(f"Conversion failed: {input_file}")
+        logger.error(f"Conversion failed: {params.input_file}")
         return False
 
 
@@ -282,14 +307,40 @@ def convert_with_blender(
     input_file: str,
     output_file: str,
     verbose: bool = False,
-    **kwargs
+    params: Optional[BlenderParams] = None
 ) -> bool:
     """
     Convert FBX to GLB using Blender
     """
+    # Check FBX version first
+    fbx_version = detect_fbx_version(input_file)
+    logger.info(f"Detected FBX version: {fbx_version}")
+    
+    # Extract version number for comparison
+    version_match = None
+    if "Binary FBX" in fbx_version:
+        import re
+        version_match = re.search(r'Binary FBX ([\d.]+)', fbx_version)
+    
+    if version_match:
+        version_num = float(version_match.group(1))
+        if version_num < 7.1:
+            logger.warning(f"FBX version {version_num} may not be supported by Blender 4.x. "
+                         f"Consider upgrading the FBX file to version 7.1 or later.")
+            logger.info("Alternative solutions:")
+            logger.info("  1. Use an older version of Blender (3.x) that supports FBX 6.1")
+            logger.info("  2. Upgrade the FBX file using Autodesk Maya, 3ds Max, or FBX Converter")
+            logger.info("  3. Use Facebook's fbx2gltf tool (if available)")
+            logger.info("  4. Use Autodesk FBX SDK to upgrade the file format")
+            logger.info("  5. Try manual conversion: Import in Blender 3.x, export as FBX 7.1+, then convert")
+    
     # Create a temporary Python script for Blender
     blender_script = tempfile.NamedTemporaryFile(suffix=".py", delete=False)
 
+    # Use default parameters if none provided
+    if params is None:
+        params = BlenderParams()
+    
     # Write conversion script to the temp file
     with open(blender_script.name, 'w') as f:
         f.write(f"""
@@ -301,33 +352,41 @@ import os
 bpy.ops.object.select_all(action='SELECT')
 bpy.ops.object.delete()
 
-# Import FBX
-bpy.ops.import_scene.fbx(filepath="{input_file}", 
-                         use_custom_props=True,
-                         use_custom_props_enum_as_string=True,
-                         use_anim=True, 
-                         use_anim_action_all=True,
-                         use_image_search=True)
-
-# Export as GLB
-bpy.ops.export_scene.gltf(filepath="{output_file}",
-                         export_format='GLB',
-                         export_animations=True,
-                         export_anim_single_armature=True,
-                         export_nla_strips=True,
-                         export_texcoords=True,
-                         export_normals=True,
-                         export_materials='EXPORT',
-                         export_colors=True,
-                         export_cameras=True,
-                         export_yup=True)
-
-print("Conversion completed successfully")
+try:
+    # Import FBX
+    bpy.ops.import_scene.fbx(filepath="{input_file}", 
+                             use_custom_props=True,
+                             use_custom_props_enum_as_string=True,
+                             use_anim=True, 
+                             use_image_search=True)
+    
+    # Fix axis orientation if requested
+    if {params.fix_axis}:
+        bpy.ops.object.select_all(action='SELECT')
+        bpy.ops.transform.rotate(value=3.14159, orient_axis='X')  # Rotate 180 degrees around X axis
+    
+    # Export as GLB
+    bpy.ops.export_scene.gltf(filepath="{output_file}",
+                             export_format='GLB',
+                             export_animations={params.export_animations},
+                             export_anim_single_armature={params.export_anim_single_armature},
+                             export_nla_strips={params.export_nla_strips},
+                             export_texcoords={params.export_texcoords},
+                             export_normals={params.export_normals},
+                             export_materials='{params.export_materials}',
+                             export_cameras={params.export_cameras},
+                             export_yup={params.export_yup})
+    
+    print("Conversion completed successfully")
+    
+except Exception as e:
+    print(f"Error during conversion: {{str(e)}}")
+    sys.exit(1)
 """)
 
     try:
         # Find Blender executable
-        blender_path = kwargs.get('blender_path')
+        blender_path = params.blender_path if params else None
 
         if not blender_path:
             for path in ['/Applications/Blender.app/Contents/MacOS/Blender', 'blender']:
@@ -357,7 +416,19 @@ print("Conversion completed successfully")
         if result.returncode != 0:
             logger.error(f"Error during Blender conversion. Return code: {result.returncode}")
             if not verbose and result.stderr:
-                logger.error(f"Error output: {result.stderr.decode('utf-8')}")
+                error_output = result.stderr.decode('utf-8')
+                logger.error(f"Error output: {error_output}")
+                
+                # Check for specific error patterns and provide guidance
+                if "Version" in error_output and "unsupported" in error_output:
+                    logger.error("This appears to be an FBX version compatibility issue.")
+                    logger.error("The FBX file version is too old for this version of Blender.")
+                    logger.error("Please try one of the alternative solutions mentioned above.")
+                elif "import_scene.fbx" in error_output:
+                    logger.error("FBX import failed. This could be due to:")
+                    logger.error("  - Corrupted or unsupported FBX file")
+                    logger.error("  - Missing textures or dependencies")
+                    logger.error("  - Incompatible FBX version")
             return False
 
         return os.path.exists(output_file)

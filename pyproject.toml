@@ -11,9 +11,9 @@ authors = [
 description = "Convert FBX files to GLB format for web-based 3D applications"
 readme = "README.md"
 requires-python = ">=3.7"
+license = "MIT"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Topic :: Multimedia :: Graphics :: 3D Modeling",
     "Topic :: Multimedia :: Graphics :: 3D Conversion",

@@ -21,10 +21,10 @@ A versatile toolkit for converting FBX 3D models to GLB format for web applicati
 pip install fbx2glb
 ```
 
-### With Development Dependencies
+### Development
 
 ```bash
-pip install fbx2glb[dev]
+pip install -e '.[dev]'
 ```
 
 ## FBX SDK Installation (Optional)
