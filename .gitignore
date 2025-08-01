@@ -77,6 +77,9 @@ local/*.pkg
 sdk/*.pkg
 sdk/*.tgz
 
+# Build tools (binaries - keep in project but don't track changes)
+tools/upgrade_fbx
+
 # Temporary files
 *.tmp
 *.temp

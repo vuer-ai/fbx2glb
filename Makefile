@@ -1,11 +1,12 @@
 # FBX to GLB conversion tools Makefile
 
-.PHONY: help install-fbx-sdk install-fbx2gltf convert-xbot convert-all-fbx check-system status build-package publish-package troubleshoot upgrade-xbot
+.PHONY: help install-fbx-sdk install-fbx2gltf convert-xbot convert-all-fbx check-system status build-package publish-package troubleshoot upgrade-xbot build-upgrade-tool clean
 
 help:
 	@echo "Available commands:"
 	@echo "  make install-fbx-sdk       - Download and install the FBX SDK Python bindings"
 	@echo "  make install-fbx2gltf      - Install Facebook's fbx2gltf tool (requires Homebrew)"
+	@echo "  make build-upgrade-tool    - Build the FBX upgrade tool (requires FBX SDK)"
 	@echo "  make convert-xbot          - Convert the XBot model using the FBX SDK"
 	@echo "  make convert-xbot-fbx2gltf - Convert the XBot model using fbx2gltf"
 	@echo "  make upgrade-xbot          - Upgrade XBot.fbx to newer version and convert"
@@ -15,6 +16,7 @@ help:
 	@echo "  make troubleshoot          - Diagnose conversion issues and provide solutions"
 	@echo "  make build-package         - Build the Python package"
 	@echo "  make publish-package       - Publish the package to PyPI"
+	@echo "  make clean                 - Clean intermediate files and build artifacts"
 
 # FBX SDK Installation
 install-fbx-sdk:
@@ -30,6 +32,22 @@ install-fbx-sdk:
 		echo "This command only supports macOS. For other platforms, please download the SDK from Autodesk's website."; \
 	fi
 
+# Build FBX upgrade tool
+build-upgrade-tool:
+	@echo "Building FBX upgrade tool..."
+	@if [ ! -d "/Applications/Autodesk/FBX SDK/2020.3.7" ]; then \
+		echo "Error: FBX SDK not found. Please run 'make install-fbx-sdk' first."; \
+		exit 1; \
+	fi
+	@cd tools && \
+	FBX_SDK_PATH="/Applications/Autodesk/FBX SDK/2020.3.7" && \
+	CXX=clang++ && \
+	CXXFLAGS="-std=c++11 -I$$FBX_SDK_PATH/include -Wno-error=deprecated-declarations" && \
+	LDFLAGS="-L$$FBX_SDK_PATH/lib/clang/release" && \
+	LIBS="-lfbxsdk" && \
+	$$CXX $$CXXFLAGS -o upgrade_fbx upgrade_fbx.cpp $$LDFLAGS $$LIBS && \
+	echo "FBX upgrade tool built successfully: tools/upgrade_fbx"
+
 # Convert XBot model using FBX SDK
 convert-xbot:
 	@echo "Converting XBot model..."
@@ -43,8 +61,12 @@ convert-xbot:
 upgrade-xbot:
 	@echo "Upgrading and converting XBot model..."
 	@if [ -f "examples/XBot.fbx" ]; then \
+		if [ ! -f "tools/upgrade_fbx" ]; then \
+			echo "FBX upgrade tool not found. Building it first..."; \
+			make build-upgrade-tool; \
+		fi; \
 		echo "Step 1: Upgrading FBX file using FBX SDK..."; \
-		DYLD_LIBRARY_PATH="/Applications/Autodesk/FBX SDK/2020.3.7/lib/clang/release" ./upgrade_fbx examples/XBot.fbx examples/XBot_upgraded.fbx; \
+		DYLD_LIBRARY_PATH="/Applications/Autodesk/FBX SDK/2020.3.7/lib/clang/release" ./tools/upgrade_fbx examples/XBot.fbx examples/XBot_upgraded.fbx; \
 		echo "Step 2: Converting upgraded FBX to GLB with axis fixing..."; \
 		python -m fbx2glb.cli examples/XBot_upgraded.fbx examples/XBot.glb --fix-axis --force --verbose; \
 		echo "Conversion completed successfully!"; \
@@ -78,12 +100,17 @@ troubleshoot:
 	@echo "   - FBX SDK: Can upgrade FBX files to newer versions"
 	@echo "   - fbx2gltf: Alternative conversion tool"
 
-# Clean intermediate files
+# Clean intermediate files and build artifacts
 clean:
-	@echo "Cleaning intermediate files..."
+	@echo "Cleaning intermediate files and build artifacts..."
 	@rm -f examples/XBot_upgraded.fbx
-	@rm -f upgrade_fbx
+	@rm -f tools/upgrade_fbx
 	@rm -rf temp/
+	@rm -rf dist/
+	@rm -rf build/
+	@rm -rf *.egg-info/
+	@find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+	@find . -name "*.pyc" -delete 2>/dev/null || true
 
 # Build Python package
 build-package:
