@@ -19,10 +19,16 @@ help:
 # FBX SDK Installation
 install-fbx-sdk:
 	@echo "Installing FBX SDK Python bindings..."
-	@echo "Please download the FBX SDK from Autodesk's website:"
-	@echo "https://www.autodesk.com/developer-network/platform-technologies/fbx-sdk-2020-3"
-	@echo "For macOS, download the 'fbx202037_fbxsdk_clang_macos.pkg' file"
-	@echo "Then run: sudo installer -pkg fbx202037_fbxsdk_clang_macos.pkg -target /"
+	@if [ "$$(uname)" = "Darwin" ]; then \
+		echo "Detected macOS..."; \
+		mkdir -p temp && cd temp && \
+		cp ../local/fbx202037_fbxsdk_clang_macos.pkg . && \
+		SUDO_ASKPASS=/bin/echo sudo -A installer -pkg fbx202037_fbxsdk_clang_macos.pkg -target / && \
+		cd .. && rm -rf temp && \
+		echo "FBX SDK installed successfully"; \
+	else \
+		echo "This command only supports macOS. For other platforms, please download the SDK from Autodesk's website."; \
+	fi
 
 # Convert XBot model using FBX SDK
 convert-xbot:
@@ -37,8 +43,8 @@ convert-xbot:
 upgrade-xbot:
 	@echo "Upgrading and converting XBot model..."
 	@if [ -f "examples/XBot.fbx" ]; then \
-		echo "Step 1: Upgrading FBX file using Python upgrader..."; \
-		python -m fbx2glb.cli examples/XBot.fbx examples/XBot_upgraded.fbx --upgrade-fbx --force --verbose; \
+		echo "Step 1: Upgrading FBX file using FBX SDK..."; \
+		DYLD_LIBRARY_PATH="/Applications/Autodesk/FBX SDK/2020.3.7/lib/clang/release" ./upgrade_fbx examples/XBot.fbx examples/XBot_upgraded.fbx; \
 		echo "Step 2: Converting upgraded FBX to GLB with axis fixing..."; \
 		python -m fbx2glb.cli examples/XBot_upgraded.fbx examples/XBot.glb --fix-axis --force --verbose; \
 		echo "Conversion completed successfully!"; \
@@ -76,6 +82,7 @@ troubleshoot:
 clean:
 	@echo "Cleaning intermediate files..."
 	@rm -f examples/XBot_upgraded.fbx
+	@rm -f upgrade_fbx
 	@rm -rf temp/
 
 # Build Python package
