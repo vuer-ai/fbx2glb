@@ -41,11 +41,10 @@ build-upgrade-tool:
 	fi
 	@cd tools && \
 	FBX_SDK_PATH="/Applications/Autodesk/FBX SDK/2020.3.7" && \
-	CXX=clang++ && \
-	CXXFLAGS="-std=c++11 -I$$FBX_SDK_PATH/include -Wno-error=deprecated-declarations" && \
-	LDFLAGS="-L$$FBX_SDK_PATH/lib/clang/release" && \
+	CXXFLAGS="-std=c++11 -I$(FBX_SDK_PATH)/include -Wno-error=deprecated-declarations" && \
+	LDFLAGS="-L$(FBX_SDK_PATH)/lib/clang/release" && \
 	LIBS="-lfbxsdk" && \
-	$$CXX $$CXXFLAGS -o upgrade_fbx upgrade_fbx.cpp $$LDFLAGS $$LIBS && \
+	clang++ $(CXXFLAGS) -o upgrade_fbx upgrade_fbx.cpp $(LDFLAGS) $(LIBS) && \
 	echo "FBX upgrade tool built successfully: tools/upgrade_fbx"
 
 # Convert XBot model using FBX SDK

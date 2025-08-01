@@ -71,7 +71,7 @@ def detect_fbx_version(file_path: str) -> str:
 
 
 
-def convert_file_with_params(params: type[ConversionParams]) -> bool:
+def convert_file_with_params(params) -> bool:
     # Setup logging
     log_level = logging.DEBUG if params.verbose else logging.INFO
     setup_logging(log_level)
@@ -320,8 +320,19 @@ try:
     
     # Fix axis orientation if requested
     if {params.fix_axis}:
+        # Fix the "face down" issue by using Z-up coordinate system
+        # Apply rotations around all three axes to fix orientation
         bpy.ops.object.select_all(action='SELECT')
         bpy.ops.transform.rotate(value=3.14159, orient_axis='X')  # Rotate 180 degrees around X axis
+        bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
+        
+        bpy.ops.object.select_all(action='SELECT')
+        bpy.ops.transform.rotate(value=3.14159, orient_axis='Z')  # Rotate 180 degrees around Z axis
+        bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
+        
+        bpy.ops.object.select_all(action='SELECT')
+        bpy.ops.transform.rotate(value=3.14159, orient_axis='Y')  # Rotate 180 degrees around Y axis
+        bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
     
     # Export as GLB
     bpy.ops.export_scene.gltf(filepath="{output_file}",
@@ -333,7 +344,7 @@ try:
                              export_normals=True,
                              export_materials='EXPORT',
                              export_cameras=True,
-                             export_yup={params.export_yup})
+                             export_yup={True if params.fix_axis else params.export_yup})  # Use Y-up when fixing axis
     
     print("Conversion completed successfully")
     
@@ -344,7 +355,7 @@ except Exception as e:
 
     try:
         # Find Blender executable
-        blender_path = params.blender_path if params else None
+        blender_path = getattr(params, 'blender_path', None)
 
         if not blender_path:
             for path in ['/Applications/Blender.app/Contents/MacOS/Blender', 'blender']:
