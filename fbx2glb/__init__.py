@@ -6,7 +6,7 @@ A toolkit for converting FBX 3D models to GLB format for web applications.
 
 __version__ = "0.1.0"
 
-from .converter import convert_file, detect_fbx_version
+from .converter import convert_file_with_params, detect_fbx_version
 from .batch import batch_convert
 from .component import generate_component
 from .utils import setup_logging, find_conversion_tool

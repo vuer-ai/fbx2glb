@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any, Tuple, List, Callable
 
 from .utils import find_conversion_tool, setup_logging
-from .params import ConversionParams, BlenderParams, Fbx2gltfParams
+from .params import ConversionParams
 
 # Check for FBX SDK availability
 try:
@@ -68,42 +68,10 @@ def detect_fbx_version(file_path: str) -> str:
         return "Unknown FBX format"
 
 
-def convert_file(
-    input_file: str,
-    output_file: Optional[str] = None,
-    method: Optional[str] = None,
-    force: bool = False,
-    verbose: bool = False,
-    **kwargs
-) -> bool:
-    """
-    Convert an FBX file to GLB format.
-    
-    Args:
-        input_file: Path to the input FBX file
-        output_file: Path to the output GLB file (optional)
-        method: Conversion method to use ('fbx-sdk', 'fbx2gltf', 'blender')
-        force: Force overwrite if output file exists
-        verbose: Enable verbose output
-        **kwargs: Additional method-specific parameters
-        
-    Returns:
-        True if conversion was successful, False otherwise
-    """
-    # Create parameter structure
-    params = ConversionParams(
-        input_file=input_file,
-        output_file=output_file,
-        method=method,
-        force=force,
-        verbose=verbose,
-        **kwargs
-    )
-    
-    return convert_file_with_params(params)
 
 
-def convert_file_with_params(params: ConversionParams) -> bool:
+
+def convert_file_with_params(params: type[ConversionParams]) -> bool:
     # Setup logging
     log_level = logging.DEBUG if params.verbose else logging.INFO
     setup_logging(log_level)
@@ -141,19 +109,9 @@ def convert_file_with_params(params: ConversionParams) -> bool:
     if params.method == 'fbx-sdk':
         success = convert_with_fbx_sdk(params.input_file, params.output_file, params.verbose)
     elif params.method == 'fbx2gltf':
-        fbx2gltf_params = Fbx2gltfParams(
-            draco=params.draco,
-            no_texture_optimization=params.no_texture_optimization,
-            keep_attribute_info=params.keep_attribute_info
-        )
-        success = convert_with_fbx2gltf(params.input_file, params.output_file, params.verbose, fbx2gltf_params)
+        success = convert_with_fbx2gltf(params.input_file, params.output_file, params.verbose, params)
     elif params.method == 'blender':
-        blender_params = BlenderParams(
-            fix_axis=params.fix_axis,
-            export_yup=params.export_yup,
-            blender_path=params.blender_path
-        )
-        success = convert_with_blender(params.input_file, params.output_file, params.verbose, blender_params)
+        success = convert_with_blender(params.input_file, params.output_file, params.verbose, params)
     else:
         logger.error(f"Unsupported conversion method: {params.method}")
         return False
@@ -307,7 +265,7 @@ def convert_with_blender(
     input_file: str,
     output_file: str,
     verbose: bool = False,
-    params: Optional[BlenderParams] = None
+    params: Optional[ConversionParams] = None
 ) -> bool:
     """
     Convert FBX to GLB using Blender
@@ -339,7 +297,7 @@ def convert_with_blender(
 
     # Use default parameters if none provided
     if params is None:
-        params = BlenderParams()
+        params = ConversionParams()
     
     # Write conversion script to the temp file
     with open(blender_script.name, 'w') as f:
@@ -368,13 +326,13 @@ try:
     # Export as GLB
     bpy.ops.export_scene.gltf(filepath="{output_file}",
                              export_format='GLB',
-                             export_animations={params.export_animations},
-                             export_anim_single_armature={params.export_anim_single_armature},
-                             export_nla_strips={params.export_nla_strips},
-                             export_texcoords={params.export_texcoords},
-                             export_normals={params.export_normals},
-                             export_materials='{params.export_materials}',
-                             export_cameras={params.export_cameras},
+                             export_animations=True,
+                             export_anim_single_armature=True,
+                             export_nla_strips=True,
+                             export_texcoords=True,
+                             export_normals=True,
+                             export_materials='EXPORT',
+                             export_cameras=True,
                              export_yup={params.export_yup})
     
     print("Conversion completed successfully")

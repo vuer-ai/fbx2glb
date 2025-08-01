@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import List, Tuple, Dict, Optional, Union, Any, Callable
 import logging
 
-from .converter import convert_file
+from .converter import convert_file_with_params
 from .utils import setup_logging
 
 logger = logging.getLogger(__name__)

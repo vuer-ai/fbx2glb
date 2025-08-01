@@ -68,3 +68,14 @@ docs/_build/
 
 # Converted models
 examples/**/*.glb
+
+# Local development files
+local/
+upgrade_fbx
+upgrade_fbx.cpp
+Makefile.fbx
+test_import.py
+
+# Temporary files
+*.tmp
+*.temp

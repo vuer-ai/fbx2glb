@@ -33,22 +33,4 @@ class ConversionParams(ParamsProto):
     version: bool = Flag(default=False, help="Show version information and exit")
 
 
-class BlenderParams(ParamsProto):
-    """Parameters specific to Blender conversion."""
-    fix_axis: bool = Flag(default=False, help="Fix axis orientation")
-    export_yup: bool = Flag(default=True, help="Export with Y-up coordinate system")
-    export_animations: bool = Flag(default=True, help="Export animations")
-    export_anim_single_armature: bool = Flag(default=True, help="Export single armature")
-    export_nla_strips: bool = Flag(default=True, help="Export NLA strips")
-    export_texcoords: bool = Flag(default=True, help="Export texture coordinates")
-    export_normals: bool = Flag(default=True, help="Export normals")
-    export_materials: str = Proto(default='EXPORT', help="Export materials mode")
-    export_cameras: bool = Flag(default=True, help="Export cameras")
-    blender_path: Optional[str] = Proto(default=None, help="Path to Blender executable")
-
-
-class Fbx2gltfParams(ParamsProto):
-    """Parameters specific to fbx2gltf conversion."""
-    draco: bool = Flag(default=False, help="Use Draco compression")
-    no_texture_optimization: bool = Flag(default=False, help="Disable texture optimization")
-    keep_attribute_info: bool = Flag(default=False, help="Keep attribute info") 
+ 
