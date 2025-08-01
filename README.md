@@ -2,6 +2,12 @@
 
 A versatile toolkit for converting FBX 3D models to GLB format for web applications.
 
+[![PyPI version](https://badge.fury.io/py/fbx2glb.svg)](https://badge.fury.io/py/fbx2glb)
+[![PyPI downloads](https://img.shields.io/pypi/dm/fbx2glb.svg)](https://pypi.org/project/fbx2glb/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+**📦 [Install from PyPI](https://pypi.org/project/fbx2glb/) | 🐛 [Report Issues](https://github.com/vuer-ai/fbx2glb/issues) | 📖 [Documentation](https://github.com/vuer-ai/fbx2glb#readme)**
+
 ## Features
 
 - **Multiple Conversion Methods:**
@@ -18,9 +24,21 @@ A versatile toolkit for converting FBX 3D models to GLB format for web applicati
 
 ### Installation
 
+#### From PyPI (Recommended)
+
+```bash
+# Install the latest version from PyPI
+pip install fbx2glb
+
+# Or install with specific version
+pip install fbx2glb==0.1.0
+```
+
+#### From Source (Development)
+
 ```bash
 # Clone the repository
-git clone https://github.com/fortyfive-ai/fbx2glb.git
+git clone https://github.com/vuer-ai/fbx2glb.git
 cd fbx2glb
 
 # Install in development mode
@@ -31,30 +49,50 @@ pip install -e '.[dev]'
 
 ```bash
 # Convert a single FBX file to GLB
-python -m fbx2glb.cli examples/XBot.fbx examples/XBot.glb
+fbx2glb input.fbx output.glb
+
+# Convert with axis fixing and FBX upgrading
+fbx2glb input.fbx output.glb --fix-axis --upgrade-fbx
 
 # Check available conversion methods
-python -m fbx2glb.cli --check-dependencies
+fbx2glb --check-dependencies
 
 # Generate a React/Three.js component
-python -m fbx2glb.component examples/XBot.fbx src/components/XBotModel.tsx
+fbx2glb-component input.fbx src/components/MyModel.tsx
+
+# Batch convert multiple files
+fbx2glb-batch source_directory output_directory --recursive
 ```
 
 ## Installation
 
-### Basic Installation
+### From PyPI (Recommended)
 
 ```bash
+# Install the latest version
 pip install fbx2glb
+
+# Install with specific version
+pip install fbx2glb==0.1.0
+
+# Install with development dependencies
+pip install fbx2glb[dev]
 ```
 
-### Development Installation
+### From Source (Development)
 
 ```bash
-git clone https://github.com/fortyfive-ai/fbx2glb.git
+git clone https://github.com/vuer-ai/fbx2glb.git
 cd fbx2glb
 pip install -e '.[dev]'
 ```
+
+### Package Information
+
+- **PyPI**: https://pypi.org/project/fbx2glb/
+- **Source**: https://github.com/vuer-ai/fbx2glb
+- **Documentation**: https://github.com/vuer-ai/fbx2glb#readme
+- **Issues**: https://github.com/vuer-ai/fbx2glb/issues
 
 ## FBX SDK Installation (Recommended)
 
@@ -224,33 +262,36 @@ Create a `.fbx2glb.json` file in your project root to customize conversion behav
 
 ```bash
 # Convert a single file
-python -m fbx2glb.cli model.fbx model.glb
+fbx2glb model.fbx model.glb
 
 # Convert with specific method
-python -m fbx2glb.cli model.fbx model.glb --method fbx2gltf
+fbx2glb model.fbx model.glb --method fbx2gltf
 
 # Convert with FBX upgrading
-python -m fbx2glb.cli old_model.fbx new_model.glb --upgrade-fbx
+fbx2glb old_model.fbx new_model.glb --upgrade-fbx
+
+# Convert with axis fixing (fix orientation issues)
+fbx2glb model.fbx model.glb --fix-axis
 ```
 
 ### Batch Processing
 
 ```bash
 # Convert all FBX files in a directory
-python -m fbx2glb.batch models/ output/ --recursive
+fbx2glb-batch models/ output/ --recursive
 
 # Convert with parallel processing
-python -m fbx2glb.batch models/ output/ --parallel 4 --force
+fbx2glb-batch models/ output/ --parallel 4 --force
 ```
 
 ### Component Generation
 
 ```bash
 # Generate a React component
-python -m fbx2glb.component character.fbx CharacterModel.tsx
+fbx2glb-component character.fbx CharacterModel.tsx
 
 # Generate with custom name
-python -m fbx2glb.component character.fbx CharacterModel.tsx --name CharacterModel
+fbx2glb-component character.fbx CharacterModel.tsx --name CharacterModel
 ```
 
 ## Troubleshooting
@@ -260,13 +301,13 @@ python -m fbx2glb.component character.fbx CharacterModel.tsx --name CharacterMod
 1. **FBX version too old:**
    ```bash
    # Use FBX upgrading
-   python -m fbx2glb.cli old_model.fbx new_model.glb --upgrade-fbx
+   fbx2glb old_model.fbx new_model.glb --upgrade-fbx
    ```
 
 2. **No conversion methods available:**
    ```bash
    # Check what's available
-   python -m fbx2glb.cli --check-dependencies
+   fbx2glb --check-dependencies
    
    # Install FBX SDK
    make install-fbx-sdk
@@ -275,7 +316,7 @@ python -m fbx2glb.component character.fbx CharacterModel.tsx --name CharacterMod
 3. **Blender not found:**
    ```bash
    # Specify Blender path
-   python -m fbx2glb.cli model.fbx model.glb --blender-path /path/to/blender
+   fbx2glb model.fbx model.glb --blender-path /path/to/blender
    ```
 
 ### Getting Help
@@ -285,7 +326,10 @@ python -m fbx2glb.component character.fbx CharacterModel.tsx --name CharacterMod
 make troubleshoot
 
 # Check system information
-python -m fbx2glb.cli --check-dependencies
+fbx2glb --check-dependencies
+
+# Show help
+fbx2glb --help
 ```
 
 ## Development
@@ -311,6 +355,46 @@ make build-package
 
 # Publish to PyPI (requires credentials)
 make publish-package
+```
+
+## PyPI Package
+
+This project is available as a Python package on PyPI:
+
+### 📦 [fbx2glb on PyPI](https://pypi.org/project/fbx2glb/)
+
+```bash
+# Install the latest version
+pip install fbx2glb
+
+# Install specific version
+pip install fbx2glb==0.1.0
+
+# Install with development dependencies
+pip install fbx2glb[dev]
+```
+
+### Package Features
+
+- ✅ **Ready to use**: Install and run immediately
+- ✅ **Command line tools**: `fbx2glb`, `fbx2glb-batch`, `fbx2glb-component`
+- ✅ **Multiple conversion methods**: FBX SDK, fbx2gltf, Blender
+- ✅ **FBX upgrading**: Upgrade old FBX files automatically
+- ✅ **Axis fixing**: Fix orientation issues in converted models
+- ✅ **Batch processing**: Convert multiple files efficiently
+- ✅ **Component generation**: Generate React/Three.js components
+
+### Quick Start with PyPI
+
+```bash
+# Install
+pip install fbx2glb
+
+# Convert your first model
+fbx2glb model.fbx model.glb --fix-axis
+
+# Check what's available
+fbx2glb --check-dependencies
 ```
 
 ## License
