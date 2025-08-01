@@ -10,6 +10,7 @@ from pathlib import Path
 from .converter import convert_file_with_params
 from .utils import setup_logging, check_dependencies
 from .params import ConversionParams
+from params_proto import ARGS as Args
 
 logger = logging.getLogger(__name__)
 

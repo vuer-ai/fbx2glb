@@ -70,11 +70,12 @@ docs/_build/
 examples/**/*.glb
 
 # Local development files
-local/
-upgrade_fbx
-upgrade_fbx.cpp
-Makefile.fbx
 test_import.py
+
+# SDK files (large binaries - keep in project but don't track changes)
+local/*.pkg
+sdk/*.pkg
+sdk/*.tgz
 
 # Temporary files
 *.tmp

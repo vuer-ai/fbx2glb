@@ -1,0 +1,18 @@
+# Makefile for FBX upgrade program
+
+FBX_SDK_PATH = /Applications/Autodesk/FBX\ SDK/2020.3.7
+CXX = clang++
+CXXFLAGS = -std=c++11 -I$(FBX_SDK_PATH)/include -Wno-error=deprecated-declarations
+LDFLAGS = -L$(FBX_SDK_PATH)/lib/clang/release
+LIBS = -lfbxsdk
+
+TARGET = upgrade_fbx
+SOURCE = upgrade_fbx.cpp
+
+$(TARGET): $(SOURCE)
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SOURCE) $(LDFLAGS) $(LIBS)
+
+clean:
+	rm -f $(TARGET)
+
+.PHONY: clean 
